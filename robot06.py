@@ -17,9 +17,16 @@ class Robot:
                 if game.robots[poz].player_id != self.player_id:
                     return True
             return False
+
+        # WERSJA A
+        # je≈ºeli suma potencjalnych uszkodze≈Ñ jest mniejsza od naszego zdrowia
+        # funkcja zwr√≥ci prawdƒô
+        #Nie warto atakowaƒá 1 wroga obok, ale mocniejszego od nas
         def czy_atak():
             if 9*len(wrogowie_obok) < self.hp:
                 return True
+            elif len(wrogowie_obok) == 1 and game.robots[wrogowie_obok[0]]['hp'] > self.hp:
+                return False
             return False
         def czy_puste(poz):
             if ('normal' in rg.loc_types(poz)) and not ('obstacle' in rg.loc_types(poz)):
@@ -27,15 +34,15 @@ class Robot:
                     return True
             return False
         
-        puste = [] # lista pustych pÛl obok
-        bezpieczne = [] # lista bezpiecznych pÛl obok
+        puste = [] # lista pustych p√≥l obok
+        bezpieczne = [] # lista bezpiecznych p√≥l obok
         for poz in rg.locs_around(self.location):
             if czy_puste(poz):
                 puste.append(poz)
             if czy_puste(poz) and not czy_wejscie(poz):
                 bezpieczne.append(poz)
         
-        # funkcja zwrÛci prawdÍ, jeøeli w odleg≥oúci 2 krokÛw z przodu jest wrÛg
+        # funkcja zwr√≥ci prawdƒô, je≈ºeli w odleg≈Ço≈õci 2 krok√≥w z przodu jest wr√≥g
         def zprzodu(l1, l2):
             if rg.wdist(l1, l2) == 2:
                 if abs(l1[0] - l2[0]) == 1:
@@ -44,30 +51,37 @@ class Robot:
                     return True
             return False
         
-        # funkcja zwrÛci wspÛ≥rzÍdne pola úrodkowego miÍdzy dwoma innymi
+        # funkcja zwr√≥ci wsp√≥≈Çrzƒôdne pola ≈õrodkowego miƒôdzy dwoma innymi
         # oddalonymi o 2 kroki
         def miedzypole(p1, p2):
             return (int((p1[0]+p2[0]) / 2), int((p1[1]+p2[1]) / 2))
-
-    
-        # lista wrogÛw obok
+        # funkcja zwracajƒÖca atak na najs≈Çabszego wroga obok
+        def atakuj():
+            r = wrogowie_obok[0]
+            for poz in wrogowie_obok:
+                if game.robots[poz]['hp'] > game.robots[r]['hp']:
+                    r = poz
+            return ['attack', r]
+        # lista wrog√≥w obok
         wrogowie_obok = []
         for poz in rg.locs_around(self.location):
             if czy_wrog(poz):
                 wrogowie_obok.append(poz)
         
-        # jeøeli jesteú w punkcie wejúcia, opuúÊ go
+        # je≈ºeli jeste≈õ w punkcie wej≈õcia, opu≈õƒá go
         if czy_wejscie(self.location):
             return ['move', rg.toward(self.location, rg.CENTER_POINT)]
 
-        # jeøeli obok sπ przeciwnicy, atakuj, o ile to bezpieczne
+        # je≈ºeli obok sƒÖ przeciwnicy, atakuj, o ile to bezpieczne
         if len(wrogowie_obok):
             if czy_atak():
-                return ['attack', wrogowie_obok.pop()]
+                #return ['attack', wrogowie_obok.pop()]
+                #zaatakuj najs≈Çabszego wroga obok
+                    atakuj()
             elif bezpieczne:
                 return ['move', bezpieczne.pop()]
         
-        # jeøeli wrÛg jest o dwa kroki, atakuj
+        # je≈ºeli wr√≥g jest o dwa kroki, atakuj
         for poz, robot in game.get('robots').items():
             if czy_wrog(poz) and rg.wdist(poz, self.location) == 2:
                 if zprzodu(poz, self.location):
@@ -77,9 +91,14 @@ class Robot:
                 else:
                     return ['attack', (self.location[0], poz[1])]
 
-        # jeøeli jesteú w úrodku, broÒ siÍ
+        if len(bezpieczne) == 0:
+            return ['guard']
+        if len(puste) == 0 and len(bezpieczne) == 0:
+            return ['suicide']
+
+        # je≈ºeli jeste≈õ w ≈õrodku, bro≈Ñ siƒô
         if self.location == rg.CENTER_POINT:
             return ['guard']
 
-        # idü do úrodka planszy
+        # id≈∫ do ≈õrodka planszy
         return ['move', rg.toward(self.location, rg.CENTER_POINT)]
